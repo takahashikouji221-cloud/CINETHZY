@@ -1,0 +1,45 @@
+name: CINETHZY APK Builder
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/android.yml"
+      - "CINETHZY_Android_Source.zip"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download source
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Extract CINETHZY project
+        run: |
+          mkdir project
+          unzip -o CINETHZY_Android_Source.zip -d project
+          PROJECT_DIR=$(dirname "$(find "$GITHUB_WORKSPACE/project" -name settings.gradle -print -quit)")
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+
+      - name: Build APK
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.7"
+
+      - name: Compile Android APK
+        run: gradle assembleDebug
+        working-directory: ${{ env.PROJECT_DIR }}
+
+      - name: Save APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: CINETHZY-APK
+          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
+          
